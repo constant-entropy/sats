@@ -1,0 +1,1 @@
+In order to run this application, you have to install the packages this app was depended on. After that, fill in 'self.bitmex.apiKey' and 'self.bitmex.secret' in fetch.py.
