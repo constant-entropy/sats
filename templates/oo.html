@@ -1,0 +1,18 @@
+<table>
+    <thead>
+        <tr>
+            <th>Symbol</th>
+            <th>Side</th>
+            <th>Price</th>
+            <th>Size</th>
+        </tr>
+    </thead>
+    {% for o in oo %}
+    <tr>
+        <td>{{ o['symbol'] }}</td>
+        <td>{{ o['side'] }}</td>
+        <td>{{ o['price'] }}</td>
+        <td>{{ o['size'] }}</td>
+    </tr>
+    {% endfor %}
+</table>

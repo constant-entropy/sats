@@ -1,0 +1,25 @@
+<div class="trade-item">
+    <div>
+        <label for="trade-which-exchange">Venue</label>
+        <select id="trade-which-exchange">
+            <option value="BitMEX">BitMEX</option>
+            <option value="Binance">Binance</option>
+            <option value="Kraken">Kraken</option>
+        </select>
+        <label for="trade-which-stock">Stock</label>
+        <input type="text" id="trade-which-stock">
+    </div>
+    <div>
+        <label for="limit-order-price">Limit Order Price</label>
+        <input type="text" id="limit-order-price">
+    </div>
+    <div>
+        <label for="limit-order-size">Order Size (USD)</label>
+        <input type="text" id="limit-order-size">
+    </div>
+    <div class="trade-btn">
+        <button type="button" id="trade_btn">Trade</button>
+        <button type="button" id="cancelall_btn">Cancel</button>
+    </div>
+</div>
+<script src={{ url_for('static', filename='js/trade.js') }}></script>

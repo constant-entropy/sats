@@ -1,0 +1,5 @@
+<div id='trade-log'>
+{% for trade in trades %}
+    <p>{{trade['timestamp']}} {{ trade['symbol'] }} {{ trade['orderQty'] }} @ {{ trade['price'] }}</p>
+{% endfor %}
+</div>

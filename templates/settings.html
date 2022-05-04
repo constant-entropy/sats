@@ -1,0 +1,45 @@
+<div class="settings-item">
+    <div>
+        <label for="data-resolution">Data Resolution (eg, 1d 1w)</label>
+        <input type="text" id="data-resolution"
+            minlength="2" maxlength="2"
+            value="{{ cfg['r'] }}">
+    </div>
+    <div>
+        <label for="analysis-pair">Analysis Pair (eg, BTC/ETH)</label>
+        <input type="text" id="analysis-pair"
+            minlength="7" maxlength="12"
+            value={{ cfg['pa'] }}>
+    </div>
+    <div>
+        <label for="start-date">Start Date:</label>
+        <input type="date" id="start-date"
+            min="2018-01-01" max="2021-11-10"
+            value={{ cfg['sd'] }}>
+    </div>
+    <div>
+        <label for="end-date">End Date:</label>
+        <input type="date" id="end-date"
+            min="2018-01-01" max="2021-11-10"
+            value={{ cfg['ed'] }}>
+    </div>
+    <div>
+        <label for="refresh-period">Refresh Period (5 - 30)s</label>
+        <input type="number" id="refresh-period"
+            min="5" max="30"
+            value={{ cfg['rp'] }}>
+    </div>
+    <div class="settings-balances-group">
+        <input type="checkbox" id="sb-curve" value="0" {{ cfg['sb'] }}>
+        <label for="sb-curve">Show Balances</label>
+    </div>
+    <div>
+        <label for="language">Language</label>
+        <select name="lang" id="language"
+            value={{ cfg['l'] }}>
+            <option value="English">English</option>
+            <option value="Chinese">中文</option>
+        </select>
+    </div>
+</div>
+<script src={{ url_for('static', filename='js/settings.js') }}></script>

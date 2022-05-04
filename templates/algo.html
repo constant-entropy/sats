@@ -1,0 +1,11 @@
+{% block algo %}
+<div class='algo'>
+    <p align="center">{{ algo_name }} algo result.</p>
+    {% for v in adf_values %}
+    <p>{{v}}</p>
+    {% endfor%}
+    <p>
+        VaR 
+    </p>
+</div>
+{% endblock%}

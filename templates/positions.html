@@ -1,0 +1,44 @@
+<table>
+    <thead>
+        <tr>
+            <th>Symbol</th>
+            <th>When</th>
+            <th>Entry</th>
+            <th>Price</th>
+            <th>Liq.Price</th>
+            <th>Size</th>
+            <th>UPNL</th>
+            <th>PNL</th>
+        </tr>
+    </thead>
+    {% for p in pos %}
+    <tr>
+        <td>{{ p['symbol'] }}</td>
+        <td>{{ p['entrytime'] }}</td>
+        <td>{{ p['entry'] }}</td>
+        <td>{{ p['price'] }}</td>
+        <td>{{ p['pliq'] }}</td>
+        <td
+            {% if p['size'][0] != '-' %}
+            style="color: darkgreen; font-weight: bold;"
+            {% else %}
+            style="color: darkred; font-weight: bold;"
+            {% endif %}>{{ p['size'] }}
+        </td>
+        <td
+            {% if p['upnl'][0] != '-' %}
+            style="color: green;"
+            {% else %}
+            style="color: red;"
+            {% endif %}>{{ p['upnl'] }}
+        </td>
+        <td
+            {% if p['pnl'][0] != '-' %}
+            style="color: yellowgreen;"
+            {% else %}
+            style="color: brown;"
+            {% endif %}>{{ p['pnl'] }}
+        </td>
+    </tr>
+    {% endfor %}
+</table>

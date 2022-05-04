@@ -1,0 +1,337 @@
+html *{
+    font-size: 11px;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+body {
+    flex-direction: column;
+    display: flex;
+    align-content: space-between;
+}
+
+.sats-header {
+    display: flex;
+    justify-content: space-between;
+    box-shadow: inset 0 -1px 0 0 rgb(160, 138, 138);
+    border: 1px solid rgb(160, 138, 138);
+    background: azure;
+}
+
+.sats-header-div {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    width: 5%;
+}
+
+.sats-header-nav {
+    display: flex;
+    align-items: center;
+    padding: 0 20px 0 12px;
+    align-self: center;
+    border-left: 1px solid rgb(160, 138, 138);
+    flex-direction: column;
+    width: 46%;
+}
+
+.sats-header-padding {
+    display: flex;
+    align-items: center;
+    border-left: 1px solid rgb(160, 138, 138);
+    flex-direction: column;
+    width: 45%;
+    align-self: center;
+}
+
+.sats-header-settings {
+    display: flex;
+    align-items: center;
+    border-left: 1px solid rgb(160, 138, 138);
+    flex-direction: column;
+    width: 4%;
+}
+
+#sats-body {
+    display: flex;
+    border: 1px solid rgba(103, 103, 103, 1)
+}
+
+#sats-footer {
+    display: flex;
+    box-shadow: inset 0 -1px 0 0 rgb(160, 138, 138);
+    justify-content: space-between;
+    border: 1px solid rgba(103, 103, 103, 1)
+}
+
+.settings-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: transparent;
+    height: 100%;
+    width: 40px;
+    border: 1px solid transparent;
+}
+
+#settings-div {
+    flex-direction: column;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 8px solid transparent;
+    border-bottom: 8px solid transparent;
+    width: 16%;
+    box-shadow: inset 0 -1px 0 0 rgb(160, 138, 138);
+    position: absolute;
+    right: 0;
+    background-color: #63afd3;
+}
+
+@keyframes flyingbat {
+    0% {background-color: chartreuse; left: 0px; top: 0px}
+    25% {background-color: aqua; left: 200px; top: 0px}
+    50% {background-color: bisque; left: 200px; top: 200px}
+    75% {background-color: aquamarine; left: 0px; top: 200px}
+    100% {background-color: azure; left: 0px; top: 0px}
+}
+
+#sats-logo {
+    padding: 0;
+    display: flex;
+    align-items: center;
+    width: 50px;
+    height: 100%;
+    justify-content: center;
+    animation-name: flyingbat;
+    animation-duration: 4s;
+}
+
+@keyframes color-change {
+    0% { color: green; background-color: hotpink;}
+    25% { color: green;}
+    50% { color: yellowgreen;}
+    85% { color:yellowgreen;}
+    100% { color: black;}
+}
+
+.header-text {
+    display: flex;
+    justify-content: center;
+    font-size: 15px;
+}
+
+#trade-log {
+    animation: color-change 4s;
+}
+
+#algo-div {
+    padding: 8px;
+    display: flex;
+    box-shadow: inset 0 0 0 0 rgb(160, 138, 138);
+    width: 12%;
+    text-align: left;
+    flex-direction: column;
+}
+
+.ver-div {
+    display: flex;
+    flex-direction: column;
+    width: 40%;
+    border-left: 1px solid rgb(160, 138, 138);
+    align-content: space-around;
+}
+
+.hor-div {
+    display: flex;
+    height: 75%;
+}
+
+.trader {
+    flex-direction: column;
+    padding: 32px;
+    display: flex;
+    box-shadow: inset 0 0 0 0 rgb(160, 138, 138);
+    justify-content: center;
+    align-items: center;
+}
+#trade-div {
+    display: flex;
+    justify-content: space-between;
+}
+#positions-div {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-top: 1px solid rgb(160, 138, 138);
+}
+.trade-item {
+    flex-direction: column;
+    display: flex;
+    align-content: space-around;
+}
+.trade-btn {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+}
+
+table {
+    border-collapse: collapse;
+    border: 1px solid #63afd3;
+}
+table td {
+    border: 1px solid #63afd3;
+}
+tbody {
+    text-align: right;
+}
+
+#canvas {
+    padding: 8px;
+    display: flex;
+    width: 48%;
+    justify-content: center;
+    align-items: center;
+    border-left: 1px solid rgb(160, 138, 138);
+}
+
+#canvas2 {
+    padding: 0;
+    display: flex;
+    border-right: 1px solid rgb(160, 138, 138);
+    width: 75%;
+    justify-content: center;
+    align-items: center;
+}
+
+.terminal {
+    --background: white;
+    --color: black;
+    --font: 'Courier New';
+    --size: 11px;
+}
+
+label {
+    display: block;
+}
+input, label {
+    margin: .4rem 0;
+}
+
+.settings-item {
+    flex-direction: column;
+    display: flex;
+    align-content: space-around;
+}
+
+select {
+    font-size: .9rem;
+    padding: 2px 5px;
+}
+
+.settings-balances-group label, .settings-balances-group input {
+    float: none; /* if you had floats before? otherwise inline-block will behave differently */
+    display: inline-block;
+    vertical-align: middle;    
+}
+
+#terminal-div {
+    display: flex;
+    justify-content: left;
+    width: 13%;
+    box-shadow: inset 0 0px 0 0 rgb(160, 138, 138);
+    border-left: 1px solid rgb(160, 138, 138);
+}
+#balances-div {
+    display: flex;
+    width: 40%;
+    box-shadow: inset 0 0px 0 0 rgb(160, 138, 138);
+    justify-content: right;
+    align-items: center;
+    padding: 10px;
+}
+#pair-upnl-canvas {
+    display: flex;
+    box-shadow: inset 0 0px 0 0 rgb(160, 138, 138);
+    border: 1px solid rgb(160, 138, 138);
+    justify-content: center;
+    align-items: center;
+    padding: 10px;
+    background: whitesmoke;
+}
+#open-orders-div {
+    display: flex;
+    width: 14%;
+    border-left: 1px solid rgb(170, 165, 165);
+    justify-content: center;
+    align-items: center;
+    padding: 10px;
+}
+#drawdown-div {
+    width: 31%;
+    padding: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-left: 1px solid rgb(160, 138, 138);
+}
+#trade_btn {
+    border-style: groove;
+    background: #d0f08e;
+}
+#cancelall_btn {
+    border-style: groove;
+    background: #d0f08e;
+}
+::selection {
+    background: #41cd52;
+    color: #fff;
+}
+
+/* Popup container */
+.popup {
+    position: relative;
+    display: inline-block;
+    cursor: pointer;
+}
+
+/* The actual popup (appears on top) */
+.popup .popuptext {
+    visibility: hidden;
+    width: 160px;
+    background-color: #41cd52;
+    color: azure;
+    border-radius: 6px;
+    padding: 8px;
+    position: absolute;
+    bottom: 80%;
+}
+
+/* Popup arrow */
+.popup .popuptext::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: #555 transparent transparent transparent;
+}
+
+/* Toggle this class when clicking on the popup container (hide and show the popup) */
+.popup .show {
+    visibility: visible;
+    -webkit-animation: fadeIn 1s;
+    animation: fadeIn 1s
+}
+
+/* Add animation (fade in the popup) */
+@-webkit-keyframes fadeIn {
+    from {opacity: 0;}
+    to {opacity: 1;}
+}
+
+@keyframes fadeIn {
+    from {opacity: 0;}
+    to {opacity:1 ;}
+}

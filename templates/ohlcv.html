@@ -1,0 +1,21 @@
+<div>
+    <table>
+        <thead>
+        <tr>
+            <th>t</th><th>O</th><th>H</th><th>L</th><th>C</th><th>V</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for _ohlcv in ohlcv %}
+        <tr>
+            <td>{{ _ohlcv[0] }}</td>
+            <td>{{ _ohlcv[1] }}</td>
+            <td>{{ _ohlcv[2] }}</td>
+            <td>{{ _ohlcv[3] }}</td>
+            <td>{{ _ohlcv[4] }}</td>
+            <td>{{ _ohlcv[5] }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
