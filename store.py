@@ -5,6 +5,7 @@ import json
 LIB_SATS_SETTINGS = 'sats_settings'
 SYM_SATS_SETTINGS = 'web'
 HIS_BALANCES = 'his_balances'
+CANVAS = 'web_canvas'
 
 class DBConn():
     def __init__(self):
@@ -26,7 +27,7 @@ class DBConn():
             self.default_settings()
 
         try:
-            balances = self.dblib.read(HIS_BALANCES).data
+            self.dblib.read(HIS_BALANCES).data
         except actic_execptions.NoDataFoundException:
             self.dblib.write(HIS_BALANCES, 0)
 
@@ -54,6 +55,24 @@ class DBConn():
 
     def write_balances_his(self, data):
         self.dblib.write(HIS_BALANCES, data)
+
+    def read_web_canvas(self):
+        try:
+            return self.dblib.read(CANVAS).data
+        except actic_execptions.NoDataFoundException:
+            self.dblib.write(CANVAS, 0)
+
+    def write_web_canvas(self, data):
+        self.dblib.write(CANVAS, data)
+
+    def read_asset_ohlcv(self, asset):
+        try:
+            return True, self.dblib.read(asset).data
+        except actic_execptions.NoDataFoundException:
+            return False, 0
+
+    def write_asset_ohlcv(self, asset, data):
+        self.dblib.write(asset, data)
 
     def _on_exit(self):
         #self.dbcon

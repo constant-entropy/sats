@@ -1,4 +1,4 @@
-<table>
+<table style="width: 100%; height: 100%">
     <thead>
         <tr>
             <th>Symbol</th>
@@ -12,7 +12,12 @@
         <td>{{ o['symbol'] }}</td>
         <td>{{ o['side'] }}</td>
         <td>{{ o['price'] }}</td>
-        <td>{{ o['size'] }}</td>
+        <td
+        {% if o['side'] == 'buy' %}
+        style="color: yellowgreen;"
+        {% else %}
+        style="color: red;"
+        {% endif %}>{{ o['size'] }}</td>
     </tr>
     {% endfor %}
 </table>

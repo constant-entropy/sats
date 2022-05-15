@@ -1,6 +1,6 @@
 
 import time, datetime
-from flask import Flask, render_template, make_response, request
+from flask import Flask, render_template, make_response, request, session
 import numpy as np
 import json
 from statsmodels.tsa.stattools import adfuller
@@ -25,6 +25,9 @@ def datetime_cur_timestamp():
     dtobj = datetime.datetime.now(datetime.timezone.utc)
     return datetime.datetime.timestamp(dtobj) - 28800
 
+def round_float(num, fix=6):
+    return round(num, fix)
+
 class Man():
 
     def __init__(self):
@@ -37,7 +40,7 @@ class Man():
         self.open_pos = []
         self.curve_data = []
         self.curve_fig_html = None
-        self.xbt_balances = []
+        self.xbt_balances = [0]
         self.show_balances = ''
         self.btc_prices = []
         self.upnl_total = 0
@@ -61,6 +64,8 @@ class Man():
         self.drawdown_v = 0
         self.target_symbol = 'XBTUSD'
         self.positions_prices = dict()
+        self._holy_ladders = dict()
+        self.theme = 'light'
 
     def hello(self):
         return render_template('base.html')
@@ -100,8 +105,18 @@ class Man():
         '''Drop Timestamp, use default index'''
         zvalue.reset_index(drop=True, inplace=True)
         names = [self.pair[0]['name'], self.pair[1]['name']]
+        #print(zvalue)
         fig_html = self.vangogh.draw_result_single_plot(names, zvalue)
         return fig_html
+
+    def _get_ohlcv(self, asset, sd, ed, r):
+        ok, df = self.dbconn.read_asset_ohlcv(asset)
+        if not ok:
+            print('Fetch {} OHLCV from exchange'.format(asset))
+            ok, df = self.bitmex.get_df(asset, sd=sd, tf=r)
+            if ok:
+                self.dbconn.write_asset_ohlcv(asset, df)
+        return df
 
     """Paint"""
     def chart(self):
@@ -113,12 +128,12 @@ class Man():
         name_list = name.split('.')
 
         if len(name_list) < 2:
-            df = self.bitmex.get_df(name, sd=cfg['sd'], tf=cfg['r'])
+            df = self._get_ohlcv(name, sd=cfg['sd'], ed='', r=cfg['r'])
             single = {'name': name, 'data': df}
             fig_html = self.vangogh.draw_history_single_plot(single)
         else:
-            dfa = self.bitmex.get_df(name_list[0], sd=cfg['sd'], tf=cfg['r'])
-            dfb = self.bitmex.get_df(name_list[1], sd=cfg['sd'], tf=cfg['r'])
+            dfa = self._get_ohlcv(name_list[0], sd=cfg['sd'], ed='', r=cfg['r'])
+            dfb = self._get_ohlcv(name_list[1], sd=cfg['sd'], ed='', r=cfg['r'])
             self.pair = [{'name': name_list[0], 'data': dfa}, {'name': name_list[1], 'data': dfb}]
             fig_html = self.vangogh.draw_history_pair_plot(self.pair)
 
@@ -193,18 +208,44 @@ class Man():
             self.positions_prices.__setitem__(stock, [price, 1.0])
         else:
             base_price = self.positions_prices[stock][0]
-            self.positions_prices.__getitem__(stock).append(round(price / base_price, 6))
+            self.positions_prices.__getitem__(stock).append(round_float(price / base_price))
 
     def _remove_closed_position_prices(self, open_positions):
         found = False
+        keys_to_remove = []
         for k in self.positions_prices.keys():
             for pos in open_positions:
                 if pos['symbol'] == k:
                     found = True
                     break
             if not found:
-                self.positions_prices.__delitem__(k)
+                keys_to_remove.append(k)
             found = False
+        for k in keys_to_remove:
+            self.positions_prices.__delitem__(k)
+
+    def _update_ladders(self, stock, entry, price, is_long):
+        if not self._holy_ladders.__contains__(stock):
+            rate = round_float(price / entry) if is_long else round_float(entry / price)
+            self._holy_ladders.__setitem__(stock, [entry, rate])
+        else:
+            base_entry = self._holy_ladders[stock][0]
+            rate = round_float(price / base_entry) if is_long else round_float(base_entry / price)
+            self._holy_ladders.__getitem__(stock).append(rate)
+
+    def _remove_closed_ladders(self, open_positions):
+        found = False
+        keys_to_remove = []
+        for k in self._holy_ladders.keys():
+            for pos in open_positions:
+                if pos['symbol'] == k:
+                    found = True
+                    break
+            if not found:
+                keys_to_remove.append(k)
+            found = False
+        for k in keys_to_remove:
+            self._holy_ladders.__delitem__(k)
 
     def positions(self):
         pos = self.bitmex.fetch_positions()
@@ -230,7 +271,10 @@ class Man():
             self.upnl_total = self.upnl_total + int(p['unrealisedPnl'])
 
             self._update_position_prices(p['symbol'], float(p['lastPrice']))
+            self._update_ladders(p['symbol'], float(p['avgEntryPrice']), float(p['lastPrice']), int(p['currentQty']) > 0)
+
         self._remove_closed_position_prices(self.open_pos)
+        self._remove_closed_ladders(self.open_pos)
         """Calculate Pair Curve
         """
         currentTimestamp = datetime_to_timestamp(pos[0]['currentTimestamp'])
@@ -308,16 +352,18 @@ class Man():
             results = self.bitmex.buy_at_best_bid(name, amount)
         try:
             if results['remaining'] >= 0:
-                results = '{0} Limit {1[side]} @ {1[price]}:{1[remaining]}:{1[filled]}'.format(
+                results = '{0} Limit {1[side]} @ {1[price]}:{1[remaining]}:{1[filled]} {1[status]}'.format(
                     datetime.datetime.now(), results)
         except KeyError as error:
             print(error)
+        except TypeError as error:
+            results = error
         return render_template('notify.html', log=results)
 
     def upnl_balances_ratio(self):
         balances = self.bitmex.get_total_balances()
         if balances != None:
-            self.drawdown_v = round(self.upnl_total / int(balances), 6)
+            self.drawdown_v = round_float(self.upnl_total / int(balances))
         self.drawdowns.append(self.drawdown_v)
         if self.show_balances == 'checked':
             return self.vangogh.draw_drawdown_plot(self.drawdowns)
@@ -346,12 +392,14 @@ class Man():
         if self.balances_str == None:
             return 'Non balances curve available'
         balances = float(self.balances_str)
-        self.dbconn.write_balances_his(balances)
+        #if balances != self.xbt_balances[-1]:
         self.xbt_balances.append(balances)
+        self.dbconn.write_balances_his(self.xbt_balances)
         cfg = json.loads(self.settings_json)
         self.show_balances = cfg['sb']
         if self.show_balances == 'checked':
-            fig_html = self.vangogh.draw_balance_plot(self.xbt_balances)
+            _, _ = self._next_target()
+            fig_html = self.vangogh.draw_balance_plot(self.xbt_balances, self.balance_targets[0:1])
         else:
             fig_html = self.balances_str
         return fig_html
@@ -416,7 +464,7 @@ class Man():
             recent_trades.pop()
         return render_template('trade_log.html', trades=recent_trades), return_code
 
-    def next_target(self):
+    def _next_target(self):
         init = 0.0152 * 1e8
         log = ''
         balances = float(self.balances_str)
@@ -426,19 +474,25 @@ class Man():
         if len(self.balance_targets) > 0:
             if balances < balance_final_target:
                 if balances >= self.balance_targets[0]:
-                    self.balance_targets.pop()
-                log = str(self.balance_targets[0])
+                    self.balance_targets.pop(0)
+                value = self.balance_targets[0]
             else:
                 log = 'Congratulates! 1BTC goal reached!'
         else:
             gain = 0.2
             while init < balance_final_target:
                 init = init + gain * init
-                self.balance_targets.append(init)
+                if init >= balances:
+                    self.balance_targets.append(init)
                 sleep(0.1)
-            log = str(self.balance_targets[0])
+            value = self.balance_targets[0]
 
-        return render_template('notify.html', log='{:.1f} -> {}'.format(balances, log))
+        return value, log
+
+    def next_target(self):
+        value, log = self._next_target()
+        balances = float(self.balances_str)
+        return render_template('notify.html', log='{:.1f} -> {} {}'.format(balances, value, log))
 
     # keep only one day chart
     # remove trades before program started
@@ -541,22 +595,60 @@ class Man():
         fig_html = self.vangogh.draw_positions_prices_chart(self.positions_prices)
         return fig_html
 
+    def connection_quality(self):
+        return 'CQ {}%'.format(self.bitmex.connection_quality())
+
+    def set_canvas(self):
+        canvas = json.loads(request.data.decode('ASCII'))
+        self.dbconn.write_web_canvas(canvas)
+        self.vangogh.set_canvas(canvas)
+        return 'Ok'
+
+    def holy_ladder(self):
+        fig_html = self.vangogh.draw_holy_ladder(self._holy_ladders)
+        return fig_html
+
+    def set_theme(self, theme):
+        req = json.loads(request.data.decode('ASCII'))
+        self.theme = req['theme']
+        return 'Ok'
+
+    def _sort_out_balances(self):
+        last_balances_80per = self.xbt_balances[-1] * 0.8
+        self.xbt_balances[:] = [balance for balance in self.xbt_balances if balance > last_balances_80per]
+        self.xbt_balances.sort()
+
     def go(self):
         """Painter
         """
         self.vangogh = VanGogh()
+        self.vangogh.set_facecolor('#eff8ff')
 
         """Connect MongoDB
         """
         self.dbconn = DBConn()
         self.dbconn.connect()
         self.settings_json = self.dbconn.read_web_setting()
-        print(self.settings_json)
+        #print(self.settings_json)
 
         """Connect Exchanges
         """
         self.bitmex = DataFetcher()
-        self.xbt_balances.append(float(self.dbconn.read_last_balances()))
+        history_balances = self.dbconn.read_last_balances()
+        #print(history_balances)
+        if type(history_balances) == type(self.xbt_balances):
+            for balance in history_balances:
+                self.xbt_balances.append(balance)
+        else:
+            self.xbt_balances.append(history_balances)
+        self._sort_out_balances()
+
+        """Last Canvas
+        """
+        canvas = self.dbconn.read_web_canvas()
+        #print(canvas)
+        if canvas:
+            self.vangogh.set_canvas(canvas)
 
         """Mount view functions
         """
@@ -577,16 +669,20 @@ class Man():
         app.add_url_rule('/pairtrade', view_func=self.pairtrade, methods=['POST'])
         app.add_url_rule('/balances', view_func=self.balances, methods=['GET'])
         app.add_url_rule('/pairexit', view_func=self.pairexit, methods=['POST'])
-        app.add_url_rule('/balances_curve', view_func=self.balances_curve, methods=['GET'])
+        app.add_url_rule('/balances_curve', view_func=self.balances_curve)
         app.add_url_rule('/check_new_listing', view_func=self.check_new_listing, methods=['GET'])
         app.add_url_rule('/trade_history', view_func=self.trade_history, methods=['GET'])
         app.add_url_rule('/bestquote', view_func=self.bestquote, methods=['POST'])
-        app.add_url_rule('/upnl_balances_ratio', view_func=self.upnl_balances_ratio, methods=['GET'])
+        app.add_url_rule('/upnl_balances_ratio', view_func=self.upnl_balances_ratio)
         app.add_url_rule('/next_target', view_func=self.next_target)
         app.add_url_rule('/trade_graph', view_func=self.trade_graph)
         app.add_url_rule('/heat_map', view_func=self.heat_map)
         app.add_url_rule('/track_target_asset', view_func=self.track_target_asset, methods=['POST'])
         app.add_url_rule('/positions_prices_chart', view_func=self.positions_prices_chart)
+        app.add_url_rule('/connection_quality', view_func=self.connection_quality)
+        app.add_url_rule('/set_canvas', view_func=self.set_canvas, methods=['POST'])
+        app.add_url_rule('/holy_ladder', view_func=self.holy_ladder)
+        app.add_url_rule('/set_theme', view_func=self.set_theme, methods=['POST'])
 
         app.run(debug=True)
 

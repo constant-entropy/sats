@@ -1,3 +1,32 @@
+$(window).on('resize', function () {
+    cmdSetCanvas();
+})
+var get_cookie = function (name) {
+    const cookieValue = 100;
+    try {
+        cookieValue = document.cookie
+         .split('; ')
+         .find(row => row.startsWith(name))
+         .split('=')[1];
+    } catch (e) {
+        console.log(e.name);
+    }
+    if (cookieValue < 10) {
+        cookieValue = 10;
+    }
+    return cookieValue;
+}
+var get_canvas = function () {
+    var json = {
+        'balance': [$('#balances-container').width(),$('#balances-container').height()],
+        'trade_graph': [$('#canvas-container').width(),$('#canvas-container').height()],
+        'drawdown': [$('#drawdown-container').width(), $('#drawdown-container').height()],
+        'position_prices': [$('#canvas2-container').width(), $('#canvas2-container').height()],
+        'holy_ladder': [$('#canvas-holy-ladder').width(), $('#canvas-holy-ladder').height()]
+    };
+    console.log(json);
+    return json;
+};
 $('#settings-div').hide();
 $('.settings-btn').click(function() {
     $.ajax({
@@ -38,18 +67,34 @@ function traderInit() {
         }
     });
 }
-traderInit()
- .then(cmdPeriodUpdateTask)
 
+traderInit()
+ .then(cmdGetPositions)
+ .then(cmdSetCanvas)
+ .then(setTimeout(cmdPeriodUpdateTask, 3*1000))
+
+function cmdSetCanvas() {
+    return $.ajax({
+        type: "POST",
+        async: true,
+        contentType: "application/json; charset=utf-8",
+        url: "/set_canvas",
+        data: JSON.stringify(get_canvas()),
+        success: function(data) {
+        }
+    });
+}
 function cmdPeriodUpdateTask() {
     cmdGetPositions()
     .then(cmdGetOpenOrders)
     .then(cmdBalancesCurve)
     .then(cmdGetTrades)
     .then(cmdTradeGraph)
+    .then(cmdHolyLadder)
     .then(cmdUpnlRatio)
     .then(cmdPositionsChart)
-    .then(setTimeout(cmdPeriodUpdateTask, 100*1000));
+    .then(cmdGetConnectionQuality)
+    .then(setTimeout(cmdPeriodUpdateTask, get_cookie('rp')*1000));
 }
 
 function cmdBalancesCurve () {
@@ -60,7 +105,7 @@ function cmdBalancesCurve () {
         url: "/balances_curve",
         data: JSON.stringify(),
         success: function (data) {
-            var graph = $("#balances-div");
+            var graph = $("#balances-container");
             graph.html(data);
         },
         complete: function () {
@@ -272,7 +317,7 @@ function cmdUpnlRatio () {
         url: "/upnl_balances_ratio",
         data: JSON.stringify(),
         success: function (data) {
-            $("#drawdown-div").html(data);
+            $("#drawdown-container").html(data);
         },
         dataType: "html"
     });
@@ -298,10 +343,24 @@ function cmdTradeGraph () {
         url: "/trade_graph",
         data: JSON.stringify(),
         success: function (data) {
-            $("#canvas").html(data);
+            $("#canvas-container").html(data);
         },
         dataType: "html"
     });
+}
+
+function cmdHolyLadder () {
+    return $.ajax({
+        type: "GET",
+        async: true,
+        contentType: "application/json; charset=utf-8",
+        url: "/holy_ladder",
+        data: JSON.stringify(),
+        success: function (data) {
+            $("#canvas-holy-ladder").html(data);
+        },
+        dataType: "html"
+    })
 }
 function cmdHeatMap () {
     return $.ajax({
@@ -333,6 +392,20 @@ function cmdTrackSymbol (symbol) {
         dataType: "html"
     });
 }
+function cmdGetConnectionQuality () {
+    return $.ajax({
+        type: "GET",
+        async: true,
+        contentType: "application/json; charset=utf-8",
+        url: "/connection_quality",
+        data: JSON.stringify(),
+        success: function (data) {
+            var graph = $("#pair-upnl-canvas");
+            graph.html(data);
+        },
+        dataType: "html"
+    });
+}
 function cmdPositionsChart () {
     return $.ajax({
         type: "GET",
@@ -341,7 +414,7 @@ function cmdPositionsChart () {
         url: "/positions_prices_chart",
         data: JSON.stringify(),
         success: function (data) {
-            $("#canvas2").html(data);
+            $("#canvas2-container").html(data);
         },
         dataType: "html"
     });

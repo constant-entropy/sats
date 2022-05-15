@@ -20,8 +20,8 @@ class DataFetcher():
             }
         })
         self.bitmex.proxies = {"http": "socks5h://127.0.0.1:1080", "https": "socks5h://127.0.0.1:1080"}
-        self.bitmex.apiKey = 'your api key'
-        self.bitmex.secret = 'your api secret'
+        self.bitmex.apiKey = ''
+        self.bitmex.secret = ''
 
         """Connect MongoDB
         """
@@ -29,15 +29,30 @@ class DataFetcher():
         #self.dbconn.connect()
         #self.settings_json = self.dbconn.read_web_setting()
 
+        self.connection_good = 0
+        self.connection_error = 0
+
+    def _good_connection(self):
+        self.connection_good += 1
+
+    def _bad_connection(self):
+        self.connection_error += 1
+
+    def connection_quality(self):
+        return round(self.connection_good / (self.connection_good + self.connection_error), 1) * 100
+
     def fetch_ohlcv(self, name, sd, tf):
         try:
             dt_obj = datetime.datetime.strptime(sd, "%Y-%m-%d")
             since = int(time.mktime(dt_obj.timetuple()) * 1000)
             data = self.bitmex.fetch_ohlcv(name + '/USD', timeframe=tf, since=since)
+            self._good_connection()
             return data
         except ccxt.NetworkError as e:
+            self._bad_connection()
             print(self.bitmex.id, 'fetch_ohlcv failed due to a network error:', str(e))
         except ccxt.ExchangeError as e:
+            self._bad_connection()
             print(self.bitmex.id, 'fetch_ohlcv failed due to exchange error:', str(e))
             # retry or whatever
             # ...
@@ -47,23 +62,41 @@ class DataFetcher():
             # ...
 
     def get_df(self, name, sd, tf):
-        dt_obj = datetime.datetime.strptime(sd, "%Y-%m-%d")
-        since = int(time.mktime(dt_obj.timetuple()) * 1000)
-        data = self.bitmex.fetch_ohlcv(name + '/USD', timeframe=tf, since=since, limit=500)
-        columns = ['t', 'O', 'H', 'L', 'C', 'V']
-        index = ['t']
-        df = pd.DataFrame(data=data, columns=columns)
-        df = df.set_index(index)
-        #print(df)
-        return df
+        try:
+            dt_obj = datetime.datetime.strptime(sd, "%Y-%m-%d")
+            since = int(time.mktime(dt_obj.timetuple()) * 1000)
+            data = self.bitmex.fetch_ohlcv(name + '/USD', timeframe=tf, since=since, limit=500)
+            columns = ['t', 'O', 'H', 'L', 'C', 'V']
+            index = ['t']
+            df = pd.DataFrame(data=data, columns=columns)
+            df = df.set_index(index)
+            #print(df)
+            return True, df
+        except ccxt.NetworkError as e:
+            self._bad_connection()
+            print(self.bitmex.id, 'get_df failed due to a network error:', str(e))
+            return None
+        except ccxt.ExchangeError as e:
+            self._bad_connection()
+            print(self.bitmex.id, 'get_df failed due to exchange error:', str(e))
+            # retry or whatever
+            # ...
+        except Exception as e:
+            print(self.bitmex.id, 'get_df failed with:', str(e))
+            # retry or whatever
+            # ...
 
     def fetch_positions(self):
         try:
-            return self.bitmex.fetch_positions()
+            ret = self.bitmex.fetch_positions()
+            self._good_connection()
+            return ret
         except ccxt.NetworkError as e:
+            self._bad_connection()
             print(self.bitmex.id, 'fetch_positions failed due to a network error:', str(e))
             return None
         except ccxt.ExchangeError as e:
+            self._bad_connection()
             print(self.bitmex.id, 'fetch_positions failed due to exchange error:', str(e))
             # retry or whatever
             # ...
@@ -74,11 +107,15 @@ class DataFetcher():
 
     def get_open_orders(self):
         try:
-            return self.bitmex.fetch_open_orders()
+            ret = self.bitmex.fetch_open_orders()
+            self._good_connection()
+            return ret
         except ccxt.NetworkError as e:
+            self._bad_connection()
             print(self.bitmex.id, 'fetch_open_orders failed due to a network error:', str(e))
             return None
         except ccxt.ExchangeError as e:
+            self._bad_connection()
             print(self.bitmex.id, 'fetch_open_orders failed due to exchange error:', str(e))
             # retry or whatever
             # ...
@@ -91,10 +128,14 @@ class DataFetcher():
         try:
             side = 'Sell' if size < 0 else 'Buy'
             params = {'execInst': 'ParticipateDoNotInitiate'}
-            return self.bitmex.create_limit_order(name + '/USD', side, abs(size), price, params=params)
+            ret = self.bitmex.create_limit_order(name + '/USD', side, abs(size), price, params=params)
+            self._good_connection()
+            return ret
         except ccxt.NetworkError as e:
+            self._bad_connection()
             print(self.bitmex.id, 'create_limit_order failed due to a network error:', str(e))
         except ccxt.ExchangeError as e:
+            self._bad_connection()
             print(self.bitmex.id, 'create_limit_order failed due to exchange error:', str(e))
             # retry or whatever
             # ...
@@ -105,10 +146,14 @@ class DataFetcher():
 
     def cancel_all_orders(self, name):
         try:
-            return self.bitmex.cancel_all_orders(name+'/USD')
+            ret = self.bitmex.cancel_all_orders(name+'/USD')
+            self._good_connection()
+            return ret
         except ccxt.NetworkError as e:
+            self._bad_connection()
             print(self.bitmex.id, 'cancel_all_orders failed due to a network error:', str(e))
         except ccxt.ExchangeError as e:
+            self._bad_connection()
             print(self.bitmex.id, 'cancel_all_orders failed due to exchange error:', str(e))
             # retry or whatever
             # ...
@@ -128,10 +173,13 @@ class DataFetcher():
             ob = self.bitmex.fetch_order_book(symbol,limit=5)
             #print(ob)
             bb = ob['bids'][0][0]
+            self._good_connection()
             return self.place_limit_order(name, size, bb)
         except ccxt.NetworkError as e:
+            self._bad_connection()
             print(self.bitmex.id, 'buy_at_best_bid failed due to a network error:', str(e))
         except ccxt.ExchangeError as e:
+            self._bad_connection()
             print(self.bitmex.id, 'buy_at_best_bid failed due to exchange error:', str(e))
             # retry or whatever
             # ...
@@ -150,10 +198,13 @@ class DataFetcher():
             ob = self.bitmex.fetch_order_book(symbol,limit=5)
             #print(ob)
             ba = ob['asks'][0][0]
+            self._good_connection()
             return self.place_limit_order(name, -size, ba)
         except ccxt.NetworkError as e:
+            self._bad_connection()
             print(self.bitmex.id, 'sell_at_best_ask failed due to a network error:', str(e))
         except ccxt.ExchangeError as e:
+            self._bad_connection()
             print(self.bitmex.id, 'sell_at_best_ask failed due to exchange error:', str(e))
             # retry or whatever
             # ...
@@ -174,10 +225,13 @@ class DataFetcher():
             for a in assets:
                 if a['currency'] == 'XBt':
                     XBt_balance = a['walletBalance']
+            self._good_connection()
             return XBt_balance
         except ccxt.NetworkError as e:
+            self._bad_connection()
             print(self.bitmex.id, 'get_total_balances failed due to a network error:', str(e))
         except ccxt.ExchangeError as e:
+            self._bad_connection()
             print(self.bitmex.id, 'get_total_balances failed due to exchange error:', str(e))
             # retry or whatever
             # ...
@@ -198,10 +252,13 @@ class DataFetcher():
                 _trade = trade['info']
                 trades.append(_trade)
             #print(trade_history)
+            self._good_connection()
             return trades
         except ccxt.NetworkError as e:
+            self._bad_connection()
             print(self.bitmex.id, 'get_today_trades failed due to a network error:', str(e))
         except ccxt.ExchangeError as e:
+            self._bad_connection()
             print(self.bitmex.id, 'get_today_trades failed due to exchange error:', str(e))
             # retry or whatever
             # ...
@@ -223,10 +280,13 @@ class DataFetcher():
             ba = ob['asks'][0][0]
             bb = ob['bids'][0][0]
             timestamp = ob['timestamp']
+            self._good_connection()
             return (ba+bb) / 2, timestamp
         except ccxt.NetworkError as e:
+            self._bad_connection()
             print(self.bitmex.id, 'get_price_of failed due to a network error:', str(e))
         except ccxt.ExchangeError as e:
+            self._bad_connection()
             print(self.bitmex.id, 'get_price_of failed due to exchange error:', str(e))
             # retry or whatever
             # ...

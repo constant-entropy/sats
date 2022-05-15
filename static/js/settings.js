@@ -1,4 +1,5 @@
 $('.settings-item').change(function() {
+    const newCookies = 'rp='.concat($('#refresh-period').val());
     var json = {
         'r':  $('#data-resolution').val(),
         'pa': $('#analysis-pair').val(),
@@ -8,7 +9,7 @@ $('.settings-item').change(function() {
         'l':  $('#language').val(),
         'sb': $('#sb-curve').is(':checked') ? 'checked' : 'unchecked'
     }
-    console.log(json)
+    document.cookie = newCookies
     $.ajax({
         type: "POST",
         async: true,

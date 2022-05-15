@@ -1,5 +1,10 @@
+"""
+May 7 2020 Updates:
+https://matplotlib.org/stable/gallery/user_interfaces/web_application_server_sgskip.html?highlight=memory
+to avoid all plt related usages
+"""
 import matplotlib
-import matplotlib.font_manager as fm
+#import matplotlib.font_manager as fm
 matplotlib.use('Agg')
 #from matplotlib.font_manager import _rebuild; _rebuild()
 #from matplotlib import get_cachedir
@@ -28,6 +33,12 @@ import matplotlib.ticker as ticker
 
 import numpy as np
 
+from io import BytesIO
+from matplotlib.figure import Figure #since 3.1
+
+def pixel():
+    return 1 / plt.rcParams['figure.dpi']
+
 def currency(x, pos):
     if x > 1e3:
         s = '${:1.1f}K'.format(x*1e-3)
@@ -48,10 +59,26 @@ class VanGogh():
     def __init__(self):
         plt.ioff()
         plt.style.use('seaborn-bright')
+        self.canvas = dict()
+        self.facecolor = 'white'
+
+    def set_canvas(self, canvas):
+        self.canvas = canvas
+
+    def get_canvas(self, which):
+        #print(self.canvas)
+        return self.canvas.get(which)
+
+    def set_facecolor(self, fc):
+        self.facecolor = fc
+
+    def get_facecolor(self):
+        return self.facecolor
 
     def draw_var_histo(self, returns):
-        fig, axs = plt.subplots(figsize=(7, 1.2))
-        counts, bins, patches = axs.hist(returns, bins=int(len(returns)/5), density=False,
+        fig = Figure(figsize=(7, 1.2))
+        axs = fig.subplots()
+        _, bins, _ = axs.hist(returns, bins=int(len(returns)/5), density=False,
             facecolor='g', alpha=0.75, color='white', rwidth=0.3)
         axs.set_xticks(bins)
         axs.xaxis.set_major_formatter(ticker.FormatStrFormatter('%0.1f'))
@@ -59,9 +86,6 @@ class VanGogh():
         #axs.set_minor
         fig_html = mpld3.fig_to_html(fig,include_libraries=False)
         #plt.show()
-        plt.cla()
-        plt.clf()
-        plt.close(fig)
 
         return fig_html
 
@@ -84,20 +108,24 @@ class VanGogh():
         return fig_html
 
     def draw_result_single_plot(self, names, data):
+        width, height = self.get_canvas('position_prices')
+        fig = Figure(figsize=(width * pixel(), height * pixel()))
         name_a = names[0]
         name_b = names[1]
-        fig, axs = plt.subplots(figsize=(3, 3.5))
+        axs = fig.subplots()
         axs.set_title('{:s} & {:s} Z-value Result'.format(name_a, name_b))
-        data.plot(ax=axs, color='blue')
+        #data.plot(ax=axs, color='blue')
+        axs.plot(data, color='blue', linewidth=0.8)
+        axis_y = [0] * len(data)
+        axs.plot(axis_y, color='lightgreen', linestyle='dashdot', linewidth=0.6)
         fig_html = mpld3.fig_to_html(fig,include_libraries=False)
-        plt.cla()
-        plt.clf()
-        plt.close(fig)
         return fig_html
 
     def draw_history_single_plot(self, single):
+        width, height = self.get_canvas('trade_graph')
+        fig = Figure(figsize=(width * pixel() * 1.3, height * pixel() * 1.3))
         name, df = single['name'], single['data']
-        fig, (ax1, ax2) = plt.subplots(nrows=2, ncols=1)
+        (ax1, ax2) = fig.subplots(nrows=2, ncols=1, sharex=False)
         axis_x = range(0, df.O.size)
         ax1.plot(axis_x, df.O, label='Open')
         ax1.plot(axis_x, df.H, label='Highest')
@@ -106,17 +134,18 @@ class VanGogh():
         ax2.bar(axis_x, df.V, label='Volume', facecolor='g')
         ax2.set_xlabel('Day of October')
         ax1.set_ylabel(name + ' Price (USD)')
+        axis_y_0 = [0] * len(axis_x)
+        ax1.fill_between(axis_x, df.L, axis_y_0, facecolor='lightblue')
         fig_html = mpld3.fig_to_html(fig,include_libraries=False)
-        plt.cla()
-        plt.clf()
-        plt.close(fig)
         return fig_html
 
     def draw_history_pair_plot(self, pair):
-        fig, axs = plt.subplots(2, 2)
+        width, height = self.get_canvas('trade_graph')
+        fig = Figure(figsize=(width * pixel() * 1.3, height * pixel() * 1.3))
+        axs = fig.subplots(2, 2, sharex=False)
         name_a = pair[0]['name']
         name_b = pair[1]['name']
-        plt.suptitle('{:s} & {:s} Price Volume Chart'.format(name_a, name_b))
+        fig.suptitle('{:s} & {:s} Price Volume Chart'.format(name_a, name_b))
         df_a = pair[0]['data']
         df_b = pair[1]['data']
         axis_x = range(0, df_a.O.size)
@@ -135,15 +164,24 @@ class VanGogh():
         axs[0, 1].set_ylabel(name_b + ' Price (USD)')
         axs[0, 0].yaxis.set_major_formatter(ticker.FuncFormatter(currency))
         axs[1, 0].yaxis.set_major_formatter(ticker.FuncFormatter(volume))
+        axis_y_0 = [0] * len(axis_x)
+        axs[0, 0].fill_between(axis_x, df_a.L, axis_y_0, facecolor='lightblue')
+        axs[0, 1].fill_between(axis_x, df_b.L, axis_y_0, facecolor='lightblue')
         fig_html = mpld3.fig_to_html(fig,include_libraries=False)
-        plt.cla()
-        plt.clf()
-        plt.close(fig)
         return fig_html
 
-    def draw_balance_plot(self, data):
-        fig, axs = plt.subplots(figsize=(5.5, 1.8))
-        axs.plot(data,color='green',linewidth=0.8)
+    def draw_balance_plot(self, data, targets):
+        width, height = self.get_canvas('balance')
+        fig = Figure(figsize=(width * pixel(), height * pixel()))
+        axs = fig.subplots(subplot_kw={'facecolor':self.get_facecolor()})
+        axis_x = range(0, len(data))
+        axs.plot(axis_x,data,color='green',linewidth=0.8)
+        for target in targets:
+            target_data = [target] * len(data)
+            axs.plot(axis_x,target_data,linewidth=0.8,linestyle='dashed')
+            axs.fill_between(axis_x,data,target_data,alpha=0.38)
+        #initial_data = [0.0152*1e8] * len(data)
+        #axs.plot(axis_x,initial_data,linewidth=0.8,color='pink')
         #axs.set_xlim(0, 10000)
         #axs.set_xticks
         #axs.set_ylim(min(data), max(data))
@@ -151,19 +189,21 @@ class VanGogh():
         #axs.tick_params(length=20,width=20,color='g',bottom=False,labelbottom=False,labeltop=False)
         axs.set_xticks([])
         fig_html = mpld3.fig_to_html(fig,include_libraries=False)
-        plt.cla()
-        plt.clf()
-        plt.close(fig)
 
         return fig_html
 
     def draw_drawdown_plot(self, data):
-        fig, axs = plt.subplots(figsize=(4.5, 1.8))
+        width, height = self.get_canvas('drawdown')
+        fig = Figure(figsize=(width * pixel(), height * pixel()))
+        axs = fig.subplots(subplot_kw={'facecolor':self.get_facecolor()})
         if data[-1] < 0:
             color='r'
         else:
             color='g'
+        axis_x = range(0, len(data))
+        axis_y = [min(data)] * len(data)
         axs.plot(data,color=color,linewidth=0.8)
+        axs.fill_between(axis_x, data, axis_y, alpha=0.32, facecolor='r')
         #axs.set_xlim(0, 10000)
         #axs.set_xticks
         #axs.set_ylim(min(data), max(data))
@@ -173,14 +213,13 @@ class VanGogh():
         axs.xaxis.set_ticks_position('bottom')
         #axs.spines.bottom.set_visible(False)
         fig_html = mpld3.fig_to_html(fig,include_libraries=False)
-        plt.cla()
-        plt.clf()
-        plt.close(fig)
 
         return fig_html
 
     def draw_trade_graph_plot(self, entry_prices, entry_x, spot_prices, trade_prices, spot_x, trade_x, long_prices, long_x, short_prices, short_x):
-        fig, axs = plt.subplots(figsize=(7, 3.6))
+        width, height = self.get_canvas('trade_graph')
+        fig = Figure(figsize=(width * pixel(), height * pixel()))
+        axs, axs_rate = fig.subplots(2, 1, subplot_kw={'facecolor':self.get_facecolor()})
         #if len(trade_x) == len(trade_prices):
         #    axs.plot(trade_x, trade_prices, 'c:')
         #if len(entry_x) == len(entry_prices):
@@ -188,6 +227,10 @@ class VanGogh():
         spot_line_color='k'
         if len(spot_x) == len(spot_prices):
             axs.plot(spot_x, spot_prices,linewidth=0.8, color=spot_line_color)
+            arr = np.array(spot_prices)
+            mu = arr.mean()
+            std = arr.std()
+            axs.fill_between(spot_x,list(arr+std),list(arr-std),alpha=0.32,facecolor='C1')
         if len(long_x) == len(long_prices):
             axs.plot(long_x, long_prices, 'g^')
         if len(short_x) == len(short_prices):
@@ -196,17 +239,17 @@ class VanGogh():
         #axs.set_xticks
         #axs.set_ylim(min(spot_prices), max(spot_prices))
         axs.minorticks_off()
+        axs_rate.minorticks_off()
         #if spot_prices[-1] < 0:
         #    axs.tick_params(length=20,width=20,color='r',bottom=False,labelbottom=False,labeltop=False)
         #else:
         #    axs.tick_params(length=20,width=20,color='g',bottom=False,labelbottom=False,labeltop=False)
         axs.set_xticks([])
+        axs_rate.set_xticks([])
         #axs.spines.top.set_visible(False)
         axs.xaxis.set_ticks_position('bottom')
+        axs_rate.plot(spot_x, spot_prices, linewidth=0.6, color='green')
         fig_html = mpld3.fig_to_html(fig,include_libraries=False)
-        plt.cla()
-        plt.clf()
-        plt.close(fig)
 
         return fig_html
     
@@ -226,7 +269,7 @@ class VanGogh():
 
 
         fig, ax = plt.subplots(figsize=(6.5, 3.6))
-        im = ax.imshow(harvest)
+        _ = ax.imshow(harvest)
 
         # Show all ticks and label them with the respective list entries
         ax.set_xticks(np.arange(len(farmers)), labels=farmers)
@@ -239,7 +282,7 @@ class VanGogh():
         # Loop over data dimensions and create text annotations.
         for i in range(len(vegetables)):
             for j in range(len(farmers)):
-                text = ax.text(j, i, harvest[i, j],
+                _ = ax.text(j, i, harvest[i, j],
                             ha="center", va="center", color="w")
 
         #ax.set_title("Harvest of local farmers (in tons/year)")
@@ -252,19 +295,51 @@ class VanGogh():
         return fig_html
 
     def draw_positions_prices_chart(self, positions_prices):
-        fig = plt.figure(figsize=(3.0, 2.0))
-        ax = fig.add_subplot(1, 1, 1)
-        ax.spines[['left', 'bottom', 'top', 'right']].set_visible(False)
+        width, height = self.get_canvas('position_prices')
+        fig = Figure(figsize=(width * pixel(), height * pixel()))
+        axs = fig.subplots(subplot_kw={'facecolor':self.get_facecolor()})
+        min_y = 1
         for k in positions_prices.keys():
+            if min_y > min(positions_prices[k][1:]):
+                min_y = min(positions_prices[k][1:])
             axis_x = range(1, len(positions_prices[k]))
-            ax.plot(axis_x, positions_prices[k][1:], linewidth=0.8, scalex=True, scaley=True)
+            axs.plot(axis_x, positions_prices[k][1:], linewidth=0.8, scalex=True, scaley=True, label=k)
+            zero_y = [min_y] * len(positions_prices[k][1:])
+            axs.fill_between(axis_x, positions_prices[k][1:], zero_y, alpha=0.35)
 
-        plt.xticks([])
-        plt.yticks([])
-        plt.ylabel('Rate')
+        axs.set_xticks([])
+        axs.set_ylabel('Rate')
         fig_html = mpld3.fig_to_html(fig,include_libraries=False)
-        plt.cla()
-        plt.clf()
-        plt.close(fig)
+
+        return fig_html
+
+    def draw_holy_ladder(self, ladders):
+        width, height = self.get_canvas('holy_ladder')
+        fig = Figure(figsize=(width * pixel(), height * pixel()))
+        axs = fig.subplots(subplot_kw={'facecolor':self.get_facecolor()})
+        axs.set_title('Holy Ladder Title Placeholder')
+        min_y_num = 1
+        max_y_num = 0
+        for k in ladders.keys():
+            x_len = len(ladders[k])
+            axis_x = range(1, x_len)
+            axis_y = ladders[k][1:]
+            if min(axis_y) < min_y_num:
+                min_y_num = min(axis_y)
+            if max(axis_y) > max_y_num:
+                max_y_num = max(axis_y)
+            axs.plot(axis_x, axis_y, linewidth=0.8, scalex=True, scaley=True, label=k)
+            axis_y2 = [1] * (x_len - 1)
+            axs.fill_between(axis_x, axis_y, axis_y2, alpha=0.4)
+        axis_x = range(0, 2)
+        axis_y = [1] * 2
+        axs.plot(axis_x, axis_y, linewidth=0.5, linestyle='dashdot', color='g', fillstyle='bottom', markerfacecolor='blue')
+        axis_y_bottom = [min_y_num] * 2
+        axs.fill_between(axis_x, axis_y, axis_y_bottom, alpha=0.34, facecolor='red')
+        axis_y_top = [max_y_num] * 2
+        axs.fill_between(axis_x, axis_y, axis_y_top, alpha=0.34, facecolor='green')
+        axs.set_xticks([])
+        axs.set_xlabel('Holy Ladders')
+        fig_html = mpld3.fig_to_html(fig,include_libraries=False)
 
         return fig_html

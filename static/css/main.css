@@ -1,6 +1,7 @@
 html *{
     font-size: 11px;
     font-family: 'Courier New', Courier, monospace;
+    background: #eff8ff;
 }
 
 body {
@@ -143,15 +144,18 @@ body {
 .hor-div {
     display: flex;
     height: 75%;
+    min-width: 180px;
+    min-height: 280px;
 }
 
 .trader {
     flex-direction: column;
-    padding: 32px;
+    padding: 18px;
     display: flex;
     box-shadow: inset 0 0 0 0 rgb(160, 138, 138);
     justify-content: center;
     align-items: center;
+    border-left: 1px solid rgb(160, 138, 138);
 }
 #trade-div {
     display: flex;
@@ -169,8 +173,6 @@ body {
     align-content: space-around;
 }
 .trade-btn {
-    display: flex;
-    justify-content: space-between;
     padding: 10px;
 }
 
@@ -188,19 +190,37 @@ tbody {
 #canvas {
     padding: 8px;
     display: flex;
+    flex-direction: row;
     width: 48%;
     justify-content: center;
     align-items: center;
     border-left: 1px solid rgb(160, 138, 138);
 }
-
-#canvas2 {
-    padding: 0;
+#canvas-container {
+    padding: 8px;
     display: flex;
-    border-right: 1px solid rgb(160, 138, 138);
-    width: 75%;
+    width: 50%;
+    height: 100%;
     justify-content: center;
     align-items: center;
+}
+#canvas-holy-ladder {
+    padding: 8px;
+    display: flex;
+    width: 50%;
+    height: 100%;
+    justify-content: center;
+    align-items: center;
+}
+
+#canvas2 {
+    width: 75%;
+    margin-inline: 8px;
+}
+#canvas2-container {
+    width: 100%;
+    height: 100%;
+    padding: 8px;
 }
 
 .terminal {
@@ -235,44 +255,41 @@ select {
 }
 
 #terminal-div {
-    display: flex;
-    justify-content: left;
     width: 13%;
     box-shadow: inset 0 0px 0 0 rgb(160, 138, 138);
-    border-left: 1px solid rgb(160, 138, 138);
 }
-#balances-div {
-    display: flex;
+#balances-block {
     width: 40%;
     box-shadow: inset 0 0px 0 0 rgb(160, 138, 138);
-    justify-content: right;
-    align-items: center;
     padding: 10px;
+}
+#balances-container {
+    width: 100%;
+    height: 100%;
 }
 #pair-upnl-canvas {
     display: flex;
     box-shadow: inset 0 0px 0 0 rgb(160, 138, 138);
     border: 1px solid rgb(160, 138, 138);
-    justify-content: center;
+    justify-content: right;
     align-items: center;
     padding: 10px;
     background: whitesmoke;
 }
 #open-orders-div {
-    display: flex;
     width: 14%;
     border-left: 1px solid rgb(170, 165, 165);
-    justify-content: center;
-    align-items: center;
+    border-right: 1px solid rgb(170, 165, 165);
     padding: 10px;
 }
-#drawdown-div {
+#drawdown-block {
     width: 31%;
     padding: 10px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
     border-left: 1px solid rgb(160, 138, 138);
+}
+#drawdown-container {
+    width: 100%;
+    height: 100%;
 }
 #trade_btn {
     border-style: groove;
