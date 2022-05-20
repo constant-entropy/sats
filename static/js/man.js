@@ -9,7 +9,7 @@ var get_cookie = function (name) {
          .find(row => row.startsWith(name))
          .split('=')[1];
     } catch (e) {
-        console.log(e.name);
+        //console.log('get_cookie: ', e.name);
     }
     if (cookieValue < 10) {
         cookieValue = 10;
@@ -24,7 +24,7 @@ var get_canvas = function () {
         'position_prices': [$('#canvas2-container').width(), $('#canvas2-container').height()],
         'holy_ladder': [$('#canvas-holy-ladder').width(), $('#canvas-holy-ladder').height()]
     };
-    console.log(json);
+    //console.log(json);
     return json;
 };
 $('#settings-div').hide();
@@ -296,7 +296,7 @@ function cmdBestQuote (asset, amount) {
         'symbol': asset,
         'size':  amount,
     }
-    $.ajax({
+    return $.ajax({
         type: "POST",
         async: true,
         contentType: "application/json; charset=utf-8",
@@ -308,6 +308,14 @@ function cmdBestQuote (asset, amount) {
         },
         dataType: "html"
     });
+}
+function cmdBestQuoteV2 (asset, amount, interval, total) {
+    console.log('cmdBestQuoteV2 called', asset, amount, interval, total, Date());
+    cmdBestQuote(asset, amount)
+     .then(function () {
+         if (total > 0)
+            setTimeout(cmdBestQuoteV2.bind(null, asset, amount, interval, total - 1), interval*1000);
+        });
 }
 function cmdUpnlRatio () {
     return $.ajax({
@@ -474,6 +482,9 @@ jQuery(function($, undefined) {
         },
         track: function (symbol) {
             cmdTrackSymbol(symbol);
+        },
+        bbov2: function (asset, amount, interval, total) {
+            cmdBestQuoteV2(asset, amount, interval, total);
         }
     }, {
         greetings: ' :- ',

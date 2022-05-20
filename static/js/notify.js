@@ -1,6 +1,6 @@
-console.log('notify.js loaded');
+//console.log('notify.js loaded');
 function close_popup() {
-    console.log('closing popup');
+    //console.log('closing popup');
     $('#myPopup').remove();
 };
 document.getElementById('myPopup').classList.toggle('show');

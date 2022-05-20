@@ -248,7 +248,8 @@ class VanGogh():
         axs_rate.set_xticks([])
         #axs.spines.top.set_visible(False)
         axs.xaxis.set_ticks_position('bottom')
-        axs_rate.plot(spot_x, spot_prices, linewidth=0.6, color='green')
+        mirror_spot_prices = [-price for price in spot_prices]
+        axs_rate.plot(spot_x, mirror_spot_prices, linewidth=0.6, color='green')
         fig_html = mpld3.fig_to_html(fig,include_libraries=False)
 
         return fig_html

@@ -1,6 +1,22 @@
 In order to run this application, you have to install the packages this app was depended on. After that, fill in 'self.bitmex.apiKey' and 'self.bitmex.secret' in fetch.py.
 
-Visit https://github.com/constant-entropy/sats/tree/master/static/images/ to see a snapshot of SATA running live.
+Visit https://github.com/constant-entropy/sats/tree/master/static/images/ to see a snapshot of SATS running live.
 
-Command line. There are lots of commands in sats. Such as 'bbo DOGE 1'
-means buy '1' DOGE contract. See man.js for more details.
+Command line. There are lots of commands in sats. Such as 'bbo DOGE 1' means buy '1' DOGE contract. See man.js for more details.
+
+Useful commands list below.
+
+  $ bbo DOGE 1
+  buy one DOGE contract at best bid price
+
+  $ bbov2 DOGE 1 3600 20
+  buy one DOGE contract every hour until 20 contracts accumulated
+
+  $ nt
+  query next 20% gain target
+
+  $ balances
+  get balance
+
+  $ track BCHUSD
+  tracking BCHUSD instead of BTCUSD (startup default)

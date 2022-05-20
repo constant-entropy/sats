@@ -142,10 +142,10 @@ class Man():
     def cal_curve(self, data, currentTimestamp):
         score = 0
         upnl_diff = 0
-        for d in data:
-            if d['symbol'] == 'BCHUSD' or d['symbol'] == 'LTCUSD':
-                score = score + 1
-                upnl_diff = upnl_diff + int(d['upnl'])
+        #for d in data:
+        #    if d['symbol'] == 'BCHUSD' or d['symbol'] == 'LTCUSD':
+        #        score = score + 1
+        #        upnl_diff = upnl_diff + int(d['upnl'])
         if score >= 2:
             self.curve_data.append(upnl_diff)
 
